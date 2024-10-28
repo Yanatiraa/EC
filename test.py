@@ -8,7 +8,7 @@ st.header("Genetic Algorithm")
 
 # Input fields
 mutation_rate = st.number_input("Enter your mutation rate", value=0.2, step=0.01, format="%.2f")
-target_name = st.text_input("Enter your name", "Liyana")
+target_name = st.text_input("Enter your name")
 
 # Calculate button
 if st.button("Calculate"):
