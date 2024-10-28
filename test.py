@@ -62,13 +62,13 @@ def genetic_algorithm(target, mutation_rate):
         population = [(individual, fitness_cal(target, individual)) for individual in population]
         population.sort(key=lambda x: x[1])
         
-        # Display current generation's best result with added spacing
+        # Display current generation's best result
         with output_container:
             st.write(f"String: {''.join(population[0][0])} Generation: {generation} Fitness: {population[0][1]}")
-            st.write("")  # Add an empty line for spacing
-
+        
         # Check if target is reached
         if population[0][1] == 0:
+            found = True
             st.write("Target found")
             break
 
