@@ -7,8 +7,8 @@ st.set_page_config(page_title="Genetic Algorithm")
 st.header("Genetic Algorithm")
 
 # Input fields
-mutation_rate = st.number_input("Enter your mutation rate", value=0.2, step=0.01, format="%.2f")
 target_name = st.text_input("Enter your name", "Liyana")
+mutation_rate = st.number_input("Enter your mutation rate", value=0.1, step=0.01, format="%.2f")
 
 # Constants
 POP_SIZE = 500
@@ -54,22 +54,20 @@ def genetic_algorithm(target, mutation_rate):
     generation = 1
     found = False
     
-    # Display each generation's results iteratively
-    output_container = st.container()
-    
+    output_text = []  # Collect results to display after the loop
+
     while not found:
         # Calculate fitness for the population
         population = [(individual, fitness_cal(target, individual)) for individual in population]
         population.sort(key=lambda x: x[1])
-        
-        # Display current generation's best result
-        with output_container:
-            st.write(f"String: {''.join(population[0][0])} Generation: {generation} Fitness: {population[0][1]}")
-        
+
+        # Append current generation's best result to the output list
+        output_text.append(f"String: {''.join(population[0][0])} Generation: {generation} Fitness: {population[0][1]}")
+
         # Check if target is reached
         if population[0][1] == 0:
-            found = True
-            st.write("Target found")
+            output_text.append("Target found")
+            output_text.append(f"String: {''.join(population[0][0])} Generation: {generation} Fitness: {population[0][1]}")
             break
 
         # Selection and generation of new offspring
@@ -77,6 +75,9 @@ def genetic_algorithm(target, mutation_rate):
         offspring = crossover(parents, len(target))
         population = mutate(offspring, mutation_rate)
         generation += 1
+
+    # Display results after the loop
+    st.write("\n".join(output_text))
 
 # Calculate button
 if st.button("Calculate"):
