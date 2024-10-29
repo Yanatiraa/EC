@@ -61,13 +61,14 @@ def genetic_algorithm(target, mutation_rate):
         population = [(individual, fitness_cal(target, individual)) for individual in population]
         population.sort(key=lambda x: x[1])
 
-        # Append current generation's best result to the output list
-        output_text.append(f"String: {''.join(population[0][0])} Generation: {generation} Fitness: {population[0][1]}")
+        # Format each individual as a list of characters for display
+        best_individual = f"{population[0][0]}"
+        output_text.append(f"String: {best_individual} Generation: {generation} Fitness: {population[0][1]}")
 
         # Check if target is reached
         if population[0][1] == 0:
             output_text.append("Target found")
-            output_text.append(f"String: {''.join(population[0][0])} Generation: {generation} Fitness: {population[0][1]}")
+            output_text.append(f"String: {best_individual} Generation: {generation} Fitness: {population[0][1]}")
             break
 
         # Selection and generation of new offspring
