@@ -8,47 +8,50 @@ import pandas as pd
 import seaborn as sns
 import streamlit as st
 
-# Input for number of cities
-num_cities = st.number_input("Enter number of cities", min_value=1, max_value=20, value=5)
+x = [0,3,6,7,15,10,16,5,8,1.5]
+y = [1,2,1,4.5,-1,2.5,11,6,9,12]
+cities_names = ["Gliwice", "Cairo", "Rome", "Krakow", "Paris", "Alexandria", "Berlin", "Tokyo", "Rio", "Budapest"]
+city_coords = dict(zip(cities_names, zip(x, y)))
+n_population = 250
+crossover_per = 0.8
+mutation_per = 0.2
+n_generations = 200
 
-# Input fields for city names and coordinates
-city_names = []
-x_coords = []
-y_coords = []
+# Pastel Pallete
+colors = sns.color_palette("pastel", len(cities_names))
 
-for i in range(num_cities):
-    city_name = st.text_input(f"Enter name for city {i+1}", f"City_{i+1}")
-    x_coord = st.number_input(f"Enter x-coordinate for {city_name}", value=float(i * 2))
-    y_coord = st.number_input(f"Enter y-coordinate for {city_name}", value=float(i * 3))
-    city_names.append(city_name)
-    x_coords.append(x_coord)
-    y_coords.append(y_coord)
+# City Icons
+city_icons = {
+    "Gliwice": "♕",
+    "Cairo": "♖",
+    "Rome": "♗",
+    "Krakow": "♘",
+    "Paris": "♙",
+    "Alexandria": "♔",
+    "Berlin": "♚",
+    "Tokyo": "♛",
+    "Rio": "♜",
+    "Budapest": "♝"
+}
 
-# Parameters for genetic algorithm
-n_population = st.number_input("Population size", min_value=10, max_value=500, value=250)
-n_generations = st.number_input("Number of generations", min_value=10, max_value=1000, value=200)
-crossover_per = st.slider("Crossover rate", min_value=0.0, max_value=1.0, value=0.8)
-mutation_per = st.slider("Mutation rate", min_value=0.0, max_value=1.0, value=0.2)
-
-# Prepare city coordinates and icon display
-city_coords = dict(zip(city_names, zip(x_coords, y_coords)))
-colors = sns.color_palette("pastel", num_cities)
-
-# Visualization
 fig, ax = plt.subplots()
-ax.grid(False)
+
+ax.grid(False)  # Grid
 
 for i, (city, (city_x, city_y)) in enumerate(city_coords.items()):
     color = colors[i]
+    icon = city_icons[city]
     ax.scatter(city_x, city_y, c=[color], s=1200, zorder=2)
-    ax.annotate(city, (city_x, city_y), fontsize=12, ha='center', va='bottom', xytext=(0, -30), textcoords='offset points')
+    ax.annotate(icon, (city_x, city_y), fontsize=40, ha='center', va='center', zorder=3)
+    ax.annotate(city, (city_x, city_y), fontsize=12, ha='center', va='bottom', xytext=(0, -30),
+                textcoords='offset points')
 
-for i, (city1, (x1, y1)) in enumerate(city_coords.items()):
-    for j, (city2, (x2, y2)) in enumerate(city_coords.items()):
+    # Connect cities with opaque lines
+    for j, (other_city, (other_x, other_y)) in enumerate(city_coords.items()):
         if i != j:
-            ax.plot([x1, x2], [y1, y2], color='gray', linestyle='-', linewidth=1, alpha=0.1)
+            ax.plot([city_x, other_x], [city_y, other_y], color='gray', linestyle='-', linewidth=1, alpha=0.1)
 
-fig.set_size_inches(10, 8)
+fig.set_size_inches(16, 12)
 st.pyplot(fig)
 
 #population
@@ -272,7 +275,7 @@ st.write(minimum_distance)
 #shortest path
 # shortest_path = offspring_list[index_minimum]
 shortest_path = best_mixed_offspring[index_minimum]
-st.write(shortest_path)
+shortest_path
 
 x_shortest = []
 y_shortest = []
