@@ -36,43 +36,69 @@ all_programs = list(ratings.keys())  # All programs
 all_time_slots = list(range(6, 24))  # Time slots
 
 ######################################### DEFINING FUNCTIONS ########################################################################
-# defining fitness function
+# Fitness function
 def fitness_function(schedule):
     total_rating = 0
     for time_slot, program in enumerate(schedule):
         total_rating += ratings[program][time_slot]
     return total_rating
 
-# initializing the population
+# Initialize population
 def initialize_pop(programs, time_slots):
-    if not programs:
-        return [[]]
+    population = []
+    for _ in range(POP):
+        schedule = random.sample(programs, len(programs))
+        population.append(schedule)
+    return population
 
-    all_schedules = []
-    for i in range(len(programs)):
-        for schedule in initialize_pop(programs[:i] + programs[i + 1:], time_slots):
-            all_schedules.append([programs[i]] + schedule)
-
-    return all_schedules
-
-# selection
-def finding_best_schedule(all_schedules):
-    best_schedule = []
-    max_ratings = 0
-
-    for schedule in all_schedules:
-        total_ratings = fitness_function(schedule)
-        if total_ratings > max_ratings:
-            max_ratings = total_ratings
-            best_schedule = schedule
-
+# Selection: Finding the best schedule
+def finding_best_schedule(population):
+    best_schedule = max(population, key=fitness_function)
     return best_schedule
 
-# calling the pop func.
-all_possible_schedules = initialize_pop(all_programs, all_time_slots)
+# Crossover
+def crossover(schedule1, schedule2):
+    crossover_point = random.randint(1, len(schedule1) - 2)
+    child1 = schedule1[:crossover_point] + schedule2[crossover_point:]
+    child2 = schedule2[:crossover_point] + schedule1[crossover_point:]
+    return child1, child2
 
-# callin the schedule func.
-best_schedule = finding_best_schedule(all_possible_schedules)
+# Mutation
+def mutate(schedule):
+    mutation_point = random.randint(0, len(schedule) - 1)
+    new_program = random.choice(all_programs)
+    schedule[mutation_point] = new_program
+    return schedule
+
+# Genetic Algorithm
+def genetic_algorithm(initial_schedule, generations=GEN, population_size=POP, crossover_rate=0.8, mutation_rate=0.2, elitism_size=EL_S):
+    population = initialize_pop(all_programs, all_time_slots)
+
+    for generation in range(generations):
+        new_population = []
+
+        # Elitism
+        population.sort(key=fitness_function, reverse=True)
+        new_population.extend(population[:elitism_size])
+
+        while len(new_population) < population_size:
+            parent1, parent2 = random.choices(population, k=2)
+
+            if random.random() < crossover_rate:
+                child1, child2 = crossover(parent1, parent2)
+            else:
+                child1, child2 = parent1.copy(), parent2.copy()
+
+            if random.random() < mutation_rate:
+                child1 = mutate(child1)
+            if random.random() < mutation_rate:
+                child2 = mutate(child2)
+
+            new_population.extend([child1, child2])
+
+        population = new_population[:population_size]
+
+    return finding_best_schedule(population)
 
 ##################################### STREAMLIT INTERFACE ###########################################################################
 # Streamlit setup
@@ -84,11 +110,12 @@ CO_R = st.slider("Crossover Rate (CO_R)", min_value=0.0, max_value=0.95, value=0
 MUT_R = st.slider("Mutation Rate (MUT_R)", min_value=0.01, max_value=0.05, value=0.02, step=0.01)
 
 # Initialize population and find schedules
-initial_best_schedule = finding_best_schedule(initialize_pop(all_programs, all_time_slots))
+initial_population = initialize_pop(all_programs, all_time_slots)
+initial_best_schedule = finding_best_schedule(initial_population)
 remaining_time_slots = len(all_time_slots) - len(initial_best_schedule)
 genetic_schedule = genetic_algorithm(initial_best_schedule, generations=GEN, population_size=POP, crossover_rate=CO_R, mutation_rate=MUT_R, elitism_size=EL_S)
 
-final_schedule = initial_best_schedule + genetic_schedule[:remaining_time_slots]
+final_schedule = genetic_schedule[:len(all_time_slots)]
 
 # Display the results
 st.subheader("Optimal Schedule")
