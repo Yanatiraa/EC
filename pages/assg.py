@@ -95,8 +95,6 @@ if uploaded_file:
     mutation_rate = st.sidebar.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2)
 
     # Generate initial brute-force best schedule
-    st.write("### Generating Schedule...")
-    
     initial_best_schedule = all_programs.copy()
     random.shuffle(initial_best_schedule)
     rem_t_slots = len(all_time_slots) - len(initial_best_schedule)
@@ -124,6 +122,6 @@ if uploaded_file:
     schedule_df = pd.DataFrame(schedule_data)
     st.table(schedule_df)
 
-    # Display total ratings
+    # Display total ratings in a smaller font
     total_ratings = fitness_function(final_schedule, program_ratings)
-    st.write(f"### Total Ratings: *{total_ratings}*")
+    st.markdown(f"<p style='font-size: small;'>Total Ratings: <em>{total_ratings}</em></p>", unsafe_allow_html=True)
