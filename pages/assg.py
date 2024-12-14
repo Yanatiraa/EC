@@ -1,21 +1,20 @@
 import streamlit as st
 import csv
 import random
+import pandas as pd
 
-# Function to read the CSV file and convert it to the desired format
 def read_csv_to_dict(file):
+    """
+    Read a CSV file from a Streamlit upload widget and parse it into a program ratings dictionary.
+    """
     program_ratings = {}
-    # Decode the uploaded file content
-    reader = csv.reader(file.read().decode('utf-8').splitlines())
-    
-    # Skip the header
+    file_content = file.read().decode('utf-8').splitlines()
+    reader = csv.reader(file_content)
     header = next(reader)
-
     for row in reader:
         program = row[0]
-        ratings = [float(x) for x in row[1:]]  # Convert the ratings to floats
+        ratings = [float(x) for x in row[1:]]
         program_ratings[program] = ratings
-
     return program_ratings
 
 # Fitness function
@@ -25,31 +24,6 @@ def fitness_function(schedule, ratings):
         total_rating += ratings[program][time_slot]
     return total_rating
 
-# Initialize population
-def initialize_pop(programs, time_slots):
-    if not programs:
-        return [[]]
-
-    all_schedules = []
-    for i in range(len(programs)):
-        for schedule in initialize_pop(programs[:i] + programs[i + 1:], time_slots):
-            all_schedules.append([programs[i]] + schedule)
-
-    return all_schedules
-
-# Find the best schedule using brute force
-def finding_best_schedule(all_schedules, ratings):
-    best_schedule = []
-    max_ratings = 0
-
-    for schedule in all_schedules:
-        total_ratings = fitness_function(schedule, ratings)
-        if total_ratings > max_ratings:
-            max_ratings = total_ratings
-            best_schedule = schedule
-
-    return best_schedule
-
 # Crossover function
 def crossover(schedule1, schedule2):
     crossover_point = random.randint(1, len(schedule1) - 2)
@@ -57,15 +31,15 @@ def crossover(schedule1, schedule2):
     child2 = schedule2[:crossover_point] + schedule1[crossover_point:]
     return child1, child2
 
-# Mutate a schedule
+# Mutation function
 def mutate(schedule, all_programs):
     mutation_point = random.randint(0, len(schedule) - 1)
     new_program = random.choice(all_programs)
     schedule[mutation_point] = new_program
     return schedule
 
-# Genetic algorithm
-def genetic_algorithm(initial_schedule, generations, population_size, crossover_rate, mutation_rate, elitism_size, ratings, all_programs):
+# Genetic Algorithm
+def genetic_algorithm(initial_schedule, ratings, all_programs, generations, population_size, crossover_rate, mutation_rate, elitism_size):
     population = [initial_schedule]
 
     for _ in range(population_size - 1):
@@ -98,48 +72,58 @@ def genetic_algorithm(initial_schedule, generations, population_size, crossover_
 
     return population[0]
 
-# Streamlit UI elements
-st.title('Optimal Program Scheduling with Genetic Algorithm')
+# Streamlit UI
+st.title("Scheduling Problem Using Genetic Algorithm")
 
-# File uploader
-uploaded_file = st.file_uploader("Upload your CSV file", type="csv")
-if uploaded_file is not None:
-    # Read CSV
-    program_ratings_dict = read_csv_to_dict(uploaded_file)
-    all_programs = list(program_ratings_dict.keys())  # All programs
-    all_time_slots = list(range(6, 24))  # Time slots
+# File upload
+uploaded_file = st.file_uploader("Upload CSV file with Program Ratings", type=["csv"])
 
-    # Parameters for the genetic algorithm
-    GEN = 100  # Fixed number of generations
-    POP = 50   # Fixed population size
-    EL_S = 2   # Fixed elitism size
+if uploaded_file:
+    # Read CSV data
+    program_ratings = read_csv_to_dict(uploaded_file)
+    all_programs = list(program_ratings.keys())
+    all_time_slots = list(range(6, 24))  # Time slots from 6 AM to 11 PM
 
-    # Adjustable parameters
-    CO_R = st.slider("Crossover Rate", 0.1, 1.0, 0.8)
-    MUT_R = st.slider("Mutation Rate", 0.1, 1.0, 0.2)
+    # Fixed Genetic Algorithm Parameters
+    generations = 100         # Fixed number of generations
+    population_size = 50      # Fixed population size
+    elitism_size = 2          # Fixed elitism size
 
-    # Initialize population and find the best schedule
-    all_possible_schedules = initialize_pop(all_programs, all_time_slots)
-    initial_best_schedule = finding_best_schedule(all_possible_schedules, program_ratings_dict)
+    # Adjustable Parameters
+    st.sidebar.header("Adjustable Parameters")
+    crossover_rate = st.sidebar.slider("Crossover Rate", min_value=0.0, max_value=1.0, value=0.8)
+    mutation_rate = st.sidebar.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2)
 
+    # Generate initial brute-force best schedule
+    st.write("### Generating Schedule...")
+    
+    initial_best_schedule = all_programs.copy()
+    random.shuffle(initial_best_schedule)
     rem_t_slots = len(all_time_slots) - len(initial_best_schedule)
-    genetic_schedule = genetic_algorithm(
+
+    # Run Genetic Algorithm
+    optimal_schedule = genetic_algorithm(
         initial_best_schedule,
-        generations=GEN,
-        population_size=POP,
-        crossover_rate=CO_R,
-        mutation_rate=MUT_R,
-        elitism_size=EL_S,
-        ratings=program_ratings_dict,
-        all_programs=all_programs
+        program_ratings,
+        all_programs,
+        generations,
+        population_size,
+        crossover_rate,
+        mutation_rate,
+        elitism_size
     )
 
-    final_schedule = initial_best_schedule + genetic_schedule[:rem_t_slots]
+    final_schedule = initial_best_schedule + optimal_schedule[:rem_t_slots]
 
-    # Display the final optimal schedule
-    st.subheader("Final Optimal Schedule:")
-    for time_slot, program in enumerate(final_schedule):
-        st.write(f"Time Slot {all_time_slots[time_slot]:02d}:00 - Program {program}")
+    # Display final schedule in table format
+    st.write("### Final Optimal Schedule")
+    schedule_data = {
+        "Time Slot": [f"{all_time_slots[time_slot]}:00" for time_slot in range(len(final_schedule))],
+        "Program": final_schedule
+    }
+    schedule_df = pd.DataFrame(schedule_data)
+    st.table(schedule_df)
 
-    # Display the total ratings
-    st.write(f"Total Ratings: {fitness_function(final_schedule, program_ratings_dict)}")
+    # Display total ratings
+    total_ratings = fitness_function(final_schedule, program_ratings)
+    st.write(f"### Total Ratings: *{total_ratings}*")
