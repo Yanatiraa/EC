@@ -85,13 +85,14 @@ if uploaded_file:
     all_time_slots = list(range(6, 24))  # Time slots from 6 AM to 11 PM
 
     # Fixed Genetic Algorithm Parameters
-    generations = 100         # Fixed number of generations
-    population_size = 50      # Fixed population size
-    elitism_size = 2          # Fixed elitism size
+    generations = 100        
+    population_size = 50     
+    elitism_size = 2          
 
     # Adjustable Parameters
-    crossover_rate = st.slider("Crossover Rate", min_value=0.0, max_value=0.95, value=0.8)
-    mutation_rate = st.slider("Mutation Rate", min_value=0.01, max_value=0.05, value=0.02)
+    st.sidebar.header("Modify the Parameters Below")
+    crossover_rate = st.sidebar.slider("Crossover Rate", min_value=0.0, max_value=0.95, value=0.8)
+    mutation_rate = st.sidebar.slider("Mutation Rate", min_value=0.01, max_value=0.05, value=0.02)
 
     # Generate initial brute-force best schedule
     initial_best_schedule = all_programs.copy()
@@ -110,9 +111,7 @@ if uploaded_file:
         elitism_size
     )
 
-    # Display adjustable parameters above the final schedule
-    st.write(f"**Crossover Rate:** {crossover_rate}")
-    st.write(f"**Mutation Rate:** {mutation_rate}")
+    final_schedule = initial_best_schedule + optimal_schedule[:rem_t_slots]
 
     # Display final schedule in table format
     st.write("### Final Optimal Schedule")
