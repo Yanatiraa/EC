@@ -90,9 +90,8 @@ if uploaded_file:
     elitism_size = 2          # Fixed elitism size
 
     # Adjustable Parameters
-    st.sidebar.header("Adjustable Parameters")
-    crossover_rate = st.sidebar.slider("Crossover Rate", min_value=0.0, max_value=0.95, value=0.8)
-    mutation_rate = st.sidebar.slider("Mutation Rate", min_value=0.01, max_value=0.05, value=0.02)
+    crossover_rate = st.slider("Crossover Rate", min_value=0.0, max_value=0.95, value=0.8)
+    mutation_rate = st.slider("Mutation Rate", min_value=0.01, max_value=0.05, value=0.02)
 
     # Generate initial brute-force best schedule
     initial_best_schedule = all_programs.copy()
@@ -111,7 +110,9 @@ if uploaded_file:
         elitism_size
     )
 
-    final_schedule = initial_best_schedule + optimal_schedule[:rem_t_slots]
+    # Display adjustable parameters above the final schedule
+    st.write(f"**Crossover Rate:** {crossover_rate}")
+    st.write(f"**Mutation Rate:** {mutation_rate}")
 
     # Display final schedule in table format
     st.write("### Final Optimal Schedule")
