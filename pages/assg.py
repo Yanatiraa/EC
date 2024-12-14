@@ -109,12 +109,14 @@ if uploaded_file is not None:
     all_programs = list(program_ratings_dict.keys())  # All programs
     all_time_slots = list(range(6, 24))  # Time slots
 
-    # Default parameters for the genetic algorithm
-    GEN = 100       # Number of Generations
-    POP = 50        # Population Size
-    CO_R = 0.8      # Crossover Rate
-    MUT_R = 0.2     # Mutation Rate
-    EL_S = 2        # Elitism Size
+    # Parameters for the genetic algorithm
+    GEN = 100  # Fixed number of generations
+    POP = 50   # Fixed population size
+    EL_S = 2   # Fixed elitism size
+
+    # Adjustable parameters
+    CO_R = st.slider("Crossover Rate", 0.1, 1.0, 0.8)
+    MUT_R = st.slider("Mutation Rate", 0.1, 1.0, 0.2)
 
     # Initialize population and find the best schedule
     all_possible_schedules = initialize_pop(all_programs, all_time_slots)
