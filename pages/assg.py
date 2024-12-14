@@ -20,7 +20,7 @@ def read_csv_to_dict(file_path):
     return program_ratings
 
 # Path to the CSV file
-file_path = 'pages/program_ratings.csv'
+file_path = '/content/program_ratings.csv'
 
 # Get the data in the required format
 program_ratings_dict = read_csv_to_dict(file_path)
@@ -28,45 +28,29 @@ program_ratings_dict = read_csv_to_dict(file_path)
 ##################################### DEFINING PARAMETERS AND DATASET ################################################################
 ratings = program_ratings_dict
 
-GEN = 100
-POP = 50
-EL_S = 2
+GEN = 100  # Number of generations
+POP = 50   # Population size
+EL_S = 2   # Elitism size
 
 all_programs = list(ratings.keys())  # All programs
 all_time_slots = list(range(6, 24))  # Time slots
 
 ######################################### DEFINING FUNCTIONS ########################################################################
-# Fitness function
+# Fitness function with weights for prime-time slots
 def fitness_function(schedule):
     total_rating = 0
     for time_slot, program in enumerate(schedule):
-        total_rating += ratings[program][time_slot]
+        weight = 2 if 18 <= time_slot <= 22 else 1  # Prime-time slots get a higher weight
+        total_rating += weight * ratings[program][time_slot]
     return total_rating
 
-# Initializing the population
-def initialize_pop(programs, time_slots):
-    if not programs:
-        return [[]]
-
-    all_schedules = []
-    for i in range(len(programs)):
-        for schedule in initialize_pop(programs[:i] + programs[i + 1:], time_slots):
-            all_schedules.append([programs[i]] + schedule)
-
-    return all_schedules
-
-# Finding the best schedule
-def finding_best_schedule(all_schedules):
-    best_schedule = []
-    max_ratings = 0
-
-    for schedule in all_schedules:
-        total_ratings = fitness_function(schedule)
-        if total_ratings > max_ratings:
-            max_ratings = total_ratings
-            best_schedule = schedule
-
-    return best_schedule
+# Initializing a diverse population
+def initialize_population(programs, population_size):
+    population = []
+    for _ in range(population_size):
+        random_schedule = random.sample(programs, len(programs))
+        population.append(random_schedule)
+    return population
 
 # Crossover
 def crossover(schedule1, schedule2):
@@ -75,31 +59,30 @@ def crossover(schedule1, schedule2):
     child2 = schedule2[:crossover_point] + schedule1[crossover_point:]
     return child1, child2
 
-# Mutation
+# Mutation with multi-point mutation
 def mutate(schedule):
-    mutation_point = random.randint(0, len(schedule) - 1)
-    new_program = random.choice(all_programs)
-    schedule[mutation_point] = new_program
+    mutation_points = random.sample(range(len(schedule)), k=random.randint(1, 3))  # Mutate 1-3 points
+    for point in mutation_points:
+        schedule[point] = random.choice(all_programs)
     return schedule
 
 # Genetic algorithm
-def genetic_algorithm(initial_schedule, generations, population_size, crossover_rate, mutation_rate, elitism_size):
-    population = [initial_schedule]
-
-    for _ in range(population_size - 1):
-        random_schedule = initial_schedule.copy()
-        random.shuffle(random_schedule)
-        population.append(random_schedule)
+def genetic_algorithm(generations, population_size, crossover_rate, mutation_rate, elitism_size):
+    # Initialize population
+    population = initialize_population(all_programs, population_size)
+    fitness_history = []
 
     for generation in range(generations):
-        new_population = []
-
-        # Elitism
+        # Calculate fitness for the population
         population.sort(key=lambda schedule: fitness_function(schedule), reverse=True)
-        new_population.extend(population[:elitism_size])
+        fitness_history.append(fitness_function(population[0]))
+
+        # Elitism: Carry forward the best schedules
+        new_population = population[:elitism_size]
 
         while len(new_population) < population_size:
-            parent1, parent2 = random.choices(population, k=2)
+            # Select parents
+            parent1, parent2 = random.choices(population[:population_size // 2], k=2)
             if random.random() < crossover_rate:
                 child1, child2 = crossover(parent1, parent2)
             else:
@@ -112,9 +95,9 @@ def genetic_algorithm(initial_schedule, generations, population_size, crossover_
 
             new_population.extend([child1, child2])
 
-        population = new_population
+        population = new_population[:population_size]
 
-    return population[0]
+    return population[0], fitness_history
 
 ##################################### STREAMLIT INTERFACE ###########################################################################
 # Streamlit setup
@@ -125,34 +108,24 @@ st.write("Modify the parameters below and view the optimal schedule.")
 CO_R = st.slider("Crossover Rate (CO_R)", min_value=0.0, max_value=0.95, value=0.8, step=0.01)
 MUT_R = st.slider("Mutation Rate (MUT_R)", min_value=0.01, max_value=0.05, value=0.02, step=0.01)
 
-# Initialize population and find schedules
-initial_best_schedule = finding_best_schedule(initialize_pop(all_programs, all_time_slots))
+# Run genetic algorithm
+final_schedule, fitness_history = genetic_algorithm(
+    generations=GEN,
+    population_size=POP,
+    crossover_rate=CO_R,
+    mutation_rate=MUT_R,
+    elitism_size=EL_S
+)
 
-# Ensure the schedule matches the number of time slots
-if len(initial_best_schedule) < len(all_time_slots):
-    remaining_time_slots = len(all_time_slots) - len(initial_best_schedule)
-    genetic_schedule = genetic_algorithm(
-        initial_schedule=initial_best_schedule,
-        generations=GEN,
-        population_size=POP,
-        crossover_rate=CO_R,
-        mutation_rate=MUT_R,
-        elitism_size=EL_S,
-    )
-    final_schedule = initial_best_schedule + genetic_schedule[:remaining_time_slots]
-else:
-    final_schedule = initial_best_schedule[:len(all_time_slots)]
-
-# Ensure lengths match
-assert len(final_schedule) == len(all_time_slots), "Mismatch between schedule and time slots."
-
-# Display the results in Streamlit
+# Display the results
 st.subheader("Optimal Schedule")
-schedule_data = {
-    "Time Slot": [f"{time_slot:02d}:00" for time_slot in all_time_slots],
-    "Program": final_schedule,
-}
+schedule_data = {"Time Slot": [f"{time_slot:02d}:00" for time_slot in all_time_slots], "Program": final_schedule}
 schedule_df = pd.DataFrame(schedule_data)
 st.table(schedule_df)
 
+# Display fitness history
+st.subheader("Fitness Over Generations")
+st.line_chart(fitness_history)
+
+# Display total ratings
 st.write("Total Ratings:", fitness_function(final_schedule))
