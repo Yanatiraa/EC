@@ -3,29 +3,29 @@ import csv
 import random
 
 # Function to read the CSV file and convert it to the desired format
-def read_csv_to_dict(file_path):
+def read_csv_to_dict(file):
     program_ratings = {}
+    # Decode the uploaded file content
+    reader = csv.reader(file.read().decode('utf-8').splitlines())
+    
+    # Skip the header
+    header = next(reader)
 
-    with open(file_path, mode='r', newline='') as file:
-        reader = csv.reader(file)
-        # Skip the header
-        header = next(reader)
-
-        for row in reader:
-            program = row[0]
-            ratings = [float(x) for x in row[1:]]  # Convert the ratings to floats
-            program_ratings[program] = ratings
+    for row in reader:
+        program = row[0]
+        ratings = [float(x) for x in row[1:]]  # Convert the ratings to floats
+        program_ratings[program] = ratings
 
     return program_ratings
 
-# Function to generate the best schedule using genetic algorithm
+# Fitness function
 def fitness_function(schedule, ratings):
     total_rating = 0
     for time_slot, program in enumerate(schedule):
         total_rating += ratings[program][time_slot]
     return total_rating
 
-# initializing the population
+# Initialize population
 def initialize_pop(programs, time_slots):
     if not programs:
         return [[]]
@@ -37,7 +37,7 @@ def initialize_pop(programs, time_slots):
 
     return all_schedules
 
-# selection
+# Find the best schedule using brute force
 def finding_best_schedule(all_schedules, ratings):
     best_schedule = []
     max_ratings = 0
@@ -57,14 +57,14 @@ def crossover(schedule1, schedule2):
     child2 = schedule2[:crossover_point] + schedule1[crossover_point:]
     return child1, child2
 
-# Mutating function
+# Mutate a schedule
 def mutate(schedule, all_programs):
     mutation_point = random.randint(0, len(schedule) - 1)
     new_program = random.choice(all_programs)
     schedule[mutation_point] = new_program
     return schedule
 
-# genetic algorithm
+# Genetic algorithm
 def genetic_algorithm(initial_schedule, generations, population_size, crossover_rate, mutation_rate, elitism_size, ratings, all_programs):
     population = [initial_schedule]
 
@@ -76,7 +76,7 @@ def genetic_algorithm(initial_schedule, generations, population_size, crossover_
     for generation in range(generations):
         new_population = []
 
-        # Elitsm
+        # Elitism
         population.sort(key=lambda schedule: fitness_function(schedule, ratings), reverse=True)
         new_population.extend(population[:elitism_size])
 
@@ -99,15 +99,15 @@ def genetic_algorithm(initial_schedule, generations, population_size, crossover_
     return population[0]
 
 # Streamlit UI elements
-st.title('Optimal Program Scheduling')
+st.title('Optimal Program Scheduling with Genetic Algorithm')
 
 # File uploader
 uploaded_file = st.file_uploader("Upload your CSV file", type="csv")
 if uploaded_file is not None:
     # Read CSV
     program_ratings_dict = read_csv_to_dict(uploaded_file)
-    all_programs = list(program_ratings_dict.keys())  # all programs
-    all_time_slots = list(range(6, 24))  # time slots
+    all_programs = list(program_ratings_dict.keys())  # All programs
+    all_time_slots = list(range(6, 24))  # Time slots
 
     # Parameters for the genetic algorithm
     GEN = st.slider("Number of Generations", 10, 200, 100)
