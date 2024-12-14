@@ -91,8 +91,8 @@ if uploaded_file:
 
     # Adjustable Parameters
     st.sidebar.header("Adjustable Parameters")
-    crossover_rate = st.sidebar.slider("Crossover Rate", min_value=0.0, max_value=1.0, value=0.8)
-    mutation_rate = st.sidebar.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2)
+    crossover_rate = st.sidebar.slider("Crossover Rate", min_value=0.0, max_value=0.95, value=0.8)
+    mutation_rate = st.sidebar.slider("Mutation Rate", min_value=0.01, max_value=0.05, value=0.02)
 
     # Generate initial brute-force best schedule
     initial_best_schedule = all_programs.copy()
