@@ -20,7 +20,7 @@ def read_csv_to_dict(file_path):
     return program_ratings
 
 # Path to the CSV file
-file_path = 'pages/program_ratings.csv'
+file_path = '/content/program_ratings.csv'
 
 # Get the data in the required format
 program_ratings_dict = read_csv_to_dict(file_path)
@@ -43,17 +43,29 @@ def fitness_function(schedule):
         total_rating += ratings[program][time_slot]
     return total_rating
 
-# Initialize population
+# Initializing the population
 def initialize_pop(programs, time_slots):
-    population = []
-    for _ in range(POP):
-        schedule = random.sample(programs, len(programs))
-        population.append(schedule)
-    return population
+    if not programs:
+        return [[]]
 
-# Selection: Finding the best schedule
-def finding_best_schedule(population):
-    best_schedule = max(population, key=fitness_function)
+    all_schedules = []
+    for i in range(len(programs)):
+        for schedule in initialize_pop(programs[:i] + programs[i + 1:], time_slots):
+            all_schedules.append([programs[i]] + schedule)
+
+    return all_schedules
+
+# Finding the best schedule
+def finding_best_schedule(all_schedules):
+    best_schedule = []
+    max_ratings = 0
+
+    for schedule in all_schedules:
+        total_ratings = fitness_function(schedule)
+        if total_ratings > max_ratings:
+            max_ratings = total_ratings
+            best_schedule = schedule
+
     return best_schedule
 
 # Crossover
@@ -70,20 +82,24 @@ def mutate(schedule):
     schedule[mutation_point] = new_program
     return schedule
 
-# Genetic Algorithm
-def genetic_algorithm(initial_schedule, generations=GEN, population_size=POP, crossover_rate=0.8, mutation_rate=0.2, elitism_size=EL_S):
-    population = initialize_pop(all_programs, all_time_slots)
+# Genetic algorithm
+def genetic_algorithm(initial_schedule, generations, population_size, crossover_rate, mutation_rate, elitism_size):
+    population = [initial_schedule]
+
+    for _ in range(population_size - 1):
+        random_schedule = initial_schedule.copy()
+        random.shuffle(random_schedule)
+        population.append(random_schedule)
 
     for generation in range(generations):
         new_population = []
 
         # Elitism
-        population.sort(key=fitness_function, reverse=True)
+        population.sort(key=lambda schedule: fitness_function(schedule), reverse=True)
         new_population.extend(population[:elitism_size])
 
         while len(new_population) < population_size:
             parent1, parent2 = random.choices(population, k=2)
-
             if random.random() < crossover_rate:
                 child1, child2 = crossover(parent1, parent2)
             else:
@@ -96,9 +112,9 @@ def genetic_algorithm(initial_schedule, generations=GEN, population_size=POP, cr
 
             new_population.extend([child1, child2])
 
-        population = new_population[:population_size]
+        population = new_population
 
-    return finding_best_schedule(population)
+    return population[0]
 
 ##################################### STREAMLIT INTERFACE ###########################################################################
 # Streamlit setup
@@ -110,16 +126,32 @@ CO_R = st.slider("Crossover Rate (CO_R)", min_value=0.0, max_value=0.95, value=0
 MUT_R = st.slider("Mutation Rate (MUT_R)", min_value=0.01, max_value=0.05, value=0.02, step=0.01)
 
 # Initialize population and find schedules
-initial_population = initialize_pop(all_programs, all_time_slots)
-initial_best_schedule = finding_best_schedule(initial_population)
-remaining_time_slots = len(all_time_slots) - len(initial_best_schedule)
-genetic_schedule = genetic_algorithm(initial_best_schedule, generations=GEN, population_size=POP, crossover_rate=CO_R, mutation_rate=MUT_R, elitism_size=EL_S)
+initial_best_schedule = finding_best_schedule(initialize_pop(all_programs, all_time_slots))
 
-final_schedule = genetic_schedule[:len(all_time_slots)]
+# Ensure the schedule matches the number of time slots
+if len(initial_best_schedule) < len(all_time_slots):
+    remaining_time_slots = len(all_time_slots) - len(initial_best_schedule)
+    genetic_schedule = genetic_algorithm(
+        initial_schedule=initial_best_schedule,
+        generations=GEN,
+        population_size=POP,
+        crossover_rate=CO_R,
+        mutation_rate=MUT_R,
+        elitism_size=EL_S,
+    )
+    final_schedule = initial_best_schedule + genetic_schedule[:remaining_time_slots]
+else:
+    final_schedule = initial_best_schedule[:len(all_time_slots)]
 
-# Display the results
+# Ensure lengths match
+assert len(final_schedule) == len(all_time_slots), "Mismatch between schedule and time slots."
+
+# Display the results in Streamlit
 st.subheader("Optimal Schedule")
-schedule_data = {"Time Slot": [f"{time_slot:02d}:00" for time_slot in all_time_slots], "Program": final_schedule}
+schedule_data = {
+    "Time Slot": [f"{time_slot:02d}:00" for time_slot in all_time_slots],
+    "Program": final_schedule,
+}
 schedule_df = pd.DataFrame(schedule_data)
 st.table(schedule_df)
 
