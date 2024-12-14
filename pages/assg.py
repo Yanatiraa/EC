@@ -89,10 +89,10 @@ if uploaded_file:
     population_size = 50     
     elitism_size = 2          
 
-    # Adjustable Parameters
-    st.sidebar.header("Modify the Parameters Below")
-    crossover_rate = st.sidebar.slider("Crossover Rate", min_value=0.0, max_value=0.95, value=0.8)
-    mutation_rate = st.sidebar.slider("Mutation Rate", min_value=0.01, max_value=0.05, value=0.02)
+    # Adjustable Parameters on the main page
+    st.write("### Modify Genetic Algorithm Parameters")
+    crossover_rate = st.slider("Crossover Rate", min_value=0.0, max_value=0.95, value=0.8)
+    mutation_rate = st.slider("Mutation Rate", min_value=0.01, max_value=0.05, value=0.02)
 
     # Generate initial brute-force best schedule
     initial_best_schedule = all_programs.copy()
