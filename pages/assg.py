@@ -1,7 +1,6 @@
-import csv
-import random
 import streamlit as st
-import pandas as pd
+import random
+import csv
 
 # Function to read the CSV file and convert it to the desired format
 def read_csv_to_dict(file_path):
@@ -25,48 +24,24 @@ file_path = 'pages/program_ratings.csv'
 # Get the data in the required format
 program_ratings_dict = read_csv_to_dict(file_path)
 
-# Streamlit UI for user input
-st.title("Genetic Algorithm Parameters")
+# Print the result (you can also return or process it further)
+for program, ratings in program_ratings_dict.items():
+    print(f"'{program}': {ratings},")
 
-# Get user input for crossover rate and mutation rate with default values
-crossover_rate = st.slider(
-    "Crossover Rate",
-    min_value=0.0,
-    max_value=0.95,
-    value=0.8,
-    step=0.01
-)
-
-mutation_rate = st.slider(
-    "Mutation Rate",
-    min_value=0.01,
-    max_value=0.05,
-    value=0.02,
-    step=0.01
-)
-
-# Display the input values in a table
-st.subheader("User Input Values")
-input_values = pd.DataFrame({
-    "Parameter": ["Crossover Rate", "Mutation Rate"],
-    "Value": [crossover_rate, mutation_rate]
-})
-st.write(input_values)
-
-##################################### DEFINING PARAMETERS AND DATASET ################################################################
 # Sample rating programs dataset for each time slot.
 ratings = program_ratings_dict
 
 GEN = 100
 POP = 50
-CO_R = crossover_rate  # Use user input for crossover rate
-MUT_R = mutation_rate  # Use user input for mutation rate
 EL_S = 2
 
 all_programs = list(ratings.keys()) # all programs
 all_time_slots = list(range(6, 24)) # time slots
 
-######################################### DEFINING FUNCTIONS ########################################################################
+# Streamlit input for user-defined crossover and mutation rates
+crossover_rate = st.slider("Select Crossover Rate", min_value=0.0, max_value=0.95, value=0.8, step=0.01)
+mutation_rate = st.slider("Select Mutation Rate", min_value=0.01, max_value=0.05, value=0.2, step=0.01)
+
 # defining fitness function
 def fitness_function(schedule):
     total_rating = 0
@@ -105,8 +80,6 @@ all_possible_schedules = initialize_pop(all_programs, all_time_slots)
 # callin the schedule func.
 best_schedule = finding_best_schedule(all_possible_schedules)
 
-############################################# GENETIC ALGORITHM #############################################################################
-
 # Crossover
 def crossover(schedule1, schedule2):
     crossover_point = random.randint(1, len(schedule1) - 2)
@@ -126,7 +99,7 @@ def evaluate_fitness(schedule):
     return fitness_function(schedule)
 
 # genetic algorithms with parameters
-def genetic_algorithm(initial_schedule, generations=GEN, population_size=POP, crossover_rate=CO_R, mutation_rate=MUT_R, elitism_size=EL_S):
+def genetic_algorithm(initial_schedule, generations=GEN, population_size=POP, crossover_rate=crossover_rate, mutation_rate=mutation_rate, elitism_size=EL_S):
     population = [initial_schedule]
 
     for _ in range(population_size - 1):
@@ -169,12 +142,22 @@ genetic_schedule = genetic_algorithm(initial_best_schedule, generations=GEN, pop
 
 final_schedule = initial_best_schedule + genetic_schedule[:rem_t_slots]
 
-st.subheader("Final Optimal Schedule")
-schedule_data = {
-    "Time Slot": [f"{slot}:00" for slot in all_time_slots[:len(final_schedule)]],
-    "Program": final_schedule
-}
-schedule_df = pd.DataFrame(schedule_data)
-st.write(schedule_df)
+# Displaying the results in Streamlit table format
+import pandas as pd
 
-st.write("Total Ratings:", fitness_function(final_schedule))
+schedule_data = {
+    "Time Slot": [f"{time_slot}:00" for time_slot in all_time_slots[:len(final_schedule)]],
+    "Program": final_schedule,
+    "Ratings": [ratings[program][time_slot] for time_slot, program in enumerate(final_schedule)],
+}
+
+df = pd.DataFrame(schedule_data)
+
+st.write("Final Optimal Schedule:")
+st.table(df)
+
+# Optionally print to console
+for time_slot, program in enumerate(final_schedule):
+    print(f"Time Slot {all_time_slots[time_slot]:02d}:00 - Program {program}")
+
+print("Total Ratings:", fitness_function(final_schedule))
