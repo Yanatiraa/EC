@@ -1,5 +1,8 @@
 import streamlit as st
 import random
+import matplotlib.pyplot as plt
+import pandas as pd
+import plotly.express as px
 
 # Genetic Algorithm Functions
 def initialize_pop(pop_size):
@@ -49,6 +52,7 @@ def mutate(individual, mut_rate):
 def main(pop_size, mut_rate, target_fitness):
     population = initialize_pop(pop_size)
     generation = 1
+    fitness_history = []  # To store the best fitness values for each generation
 
     while True:
         selected = selection(population)
@@ -64,13 +68,20 @@ def main(pop_size, mut_rate, target_fitness):
         best_individual = max(population, key=lambda ind: fitness_cal(ind))
         best_fitness = fitness_cal(best_individual)
 
+        # Append fitness value to history
+        fitness_history.append({"Generation": generation, "Best Fitness": best_fitness})
+
         # Streamlit live output
         st.write(f"Generation {generation}, Best Fitness: {best_fitness:.6f}, Best Individual: {best_individual}")
 
         if best_fitness >= target_fitness:
-            return best_fitness, best_individual
+            st.success(f"Optimal Solution Found! Best Fitness: {best_fitness:.6f}, Best Individual: {best_individual}")
+            break
 
         generation += 1
+
+    # Convert fitness history to DataFrame
+    return pd.DataFrame(fitness_history)
 
 # Streamlit UI
 st.title("Genetic Algorithm for Hyperparameter Optimization")
@@ -79,17 +90,16 @@ st.title("Genetic Algorithm for Hyperparameter Optimization")
 target_fitness = st.slider("Target Fitness", min_value=0.90, max_value=1.0, value=0.958, step=0.001)
 pop_size = st.slider("Population Size", min_value=10, max_value=200, value=100, step=10)
 mut_rate = st.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-num_runs = st.slider("Number of Runs", min_value=1, max_value=10, value=1, step=1)
 
 if st.button("Run Genetic Algorithm"):
     with st.spinner("Running Genetic Algorithm..."):
-        results = []
-        for run in range(1, num_runs + 1):
-            st.write(f"**Run {run}**:")
-            best_fitness, best_individual = main(pop_size, mut_rate, target_fitness)
-            results.append({"Run": run, "Best Fitness": best_fitness, "Best Individual": best_individual})
-            st.write(f"Best Fitness: {best_fitness:.6f}")
-            st.write(f"Best Individual: {best_individual}")
-            st.write("---")
+        fitness_data = main(pop_size, mut_rate, target_fitness)
         
-        st.success("All runs completed!")
+        # Interactive visualization using Plotly
+        st.subheader("Best Fitness Over Generations")
+        fig = px.line(fitness_data, x="Generation", y="Best Fitness", title="Fitness Improvement Across Generations")
+        st.plotly_chart(fig)
+
+        # Optionally show the raw data as a table
+        st.subheader("Raw Fitness Data")
+        st.dataframe(fitness_data)
