@@ -68,8 +68,7 @@ def main(pop_size, mut_rate, target_fitness):
         st.write(f"Generation {generation}, Best Fitness: {best_fitness:.6f}, Best Individual: {best_individual}")
 
         if best_fitness >= target_fitness:
-            st.success(f"Optimal Solution Found! Best Fitness: {best_fitness:.6f}, Best Individual: {best_individual}")
-            break
+            return best_fitness, best_individual
 
         generation += 1
 
@@ -80,7 +79,17 @@ st.title("Genetic Algorithm for Hyperparameter Optimization")
 target_fitness = st.slider("Target Fitness", min_value=0.90, max_value=1.0, value=0.958, step=0.001)
 pop_size = st.slider("Population Size", min_value=10, max_value=200, value=100, step=10)
 mut_rate = st.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
+num_runs = st.slider("Number of Runs", min_value=1, max_value=10, value=1, step=1)
 
 if st.button("Run Genetic Algorithm"):
     with st.spinner("Running Genetic Algorithm..."):
-        main(pop_size, mut_rate, target_fitness)
+        results = []
+        for run in range(1, num_runs + 1):
+            st.write(f"**Run {run}**:")
+            best_fitness, best_individual = main(pop_size, mut_rate, target_fitness)
+            results.append({"Run": run, "Best Fitness": best_fitness, "Best Individual": best_individual})
+            st.write(f"Best Fitness: {best_fitness:.6f}")
+            st.write(f"Best Individual: {best_individual}")
+            st.write("---")
+        
+        st.success("All runs completed!")
