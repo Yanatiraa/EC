@@ -3,14 +3,6 @@ import pandas as pd
 import numpy as np
 import random
 import time
-import matplotlib.pyplot as plt
-
-# Load dataset
-@st.cache
-def load_data():
-    return pd.read_csv("hyperparameter_dataset.csv")
-
-data = load_data()
 
 # Genetic Algorithm Functions
 def initialize_pop(pop_size):
@@ -28,8 +20,7 @@ def initialize_pop(pop_size):
     return population
 
 def fitness_cal(individual):
-    accuracy = random.uniform(0.90, 1.0)
-    return accuracy
+    return random.uniform(0.90, 1.0)
 
 def selection(population):
     fitness_scores = [(ind, fitness_cal(ind)) for ind in population]
@@ -61,10 +52,9 @@ def mutate(individual, mut_rate):
 def main(pop_size, mut_rate, target_fitness):
     population = initialize_pop(pop_size)
     generation = 1
-    best_fitness_values = []
-    found = False
+    history = []
 
-    while not found:
+    while True:
         selected = selection(population)
         new_generation = []
         for _ in range(pop_size):
@@ -77,14 +67,16 @@ def main(pop_size, mut_rate, target_fitness):
         population = new_generation
         best_individual = max(population, key=lambda ind: fitness_cal(ind))
         best_fitness = fitness_cal(best_individual)
-        best_fitness_values.append(best_fitness)
+
+        # Log generation details
+        history.append({"Generation": generation, "Best Fitness": best_fitness, "Best Individual": best_individual})
 
         if best_fitness >= target_fitness:
-            found = True
+            break
 
         generation += 1
 
-    return best_individual, best_fitness_values
+    return history
 
 # Streamlit UI
 st.title("Genetic Algorithm for Hyperparameter Optimization")
@@ -96,12 +88,14 @@ mut_rate = st.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2, s
 
 if st.button("Run Genetic Algorithm"):
     with st.spinner("Running Genetic Algorithm..."):
-        best_individual, fitness_values = main(pop_size, mut_rate, target_fitness)
+        history = main(pop_size, mut_rate, target_fitness)
         st.success("Optimization Complete!")
     
     # Display results
-    st.subheader("Best Individual")
-    st.write(best_individual)
+    st.subheader("All Generations")
+    history_df = pd.DataFrame(history)
+    st.dataframe(history_df)
 
-    st.subheader("Fitness Values Across Generations")
-    st.line_chart(fitness_values)
+    st.subheader("Best Individual")
+    best_individual = history[-1]["Best Individual"]
+    st.write(best_individual)
