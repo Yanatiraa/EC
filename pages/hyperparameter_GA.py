@@ -76,11 +76,11 @@ def main(pop_size, mut_rate, target_fitness):
 # Streamlit UI
 st.title("Genetic Algorithm for Hyperparameter Optimization")
 
-# User inputs with state management
-target_fitness = st.number_input("Target Fitness", min_value=0.90, max_value=1.0, value=0.958, step=0.001, key="target_fitness")
-pop_size = st.number_input("Population Size", min_value=10, max_value=200, value=100, step=10, key="pop_size")
-mut_rate = st.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2, step=0.01, key="mut_rate")
+# User inputs using sliders
+target_fitness = st.slider("Target Fitness", min_value=0.90, max_value=1.0, value=0.958, step=0.001)
+pop_size = st.slider("Population Size", min_value=10, max_value=200, value=100, step=10)
+mut_rate = st.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
 
 if st.button("Run Genetic Algorithm"):
     with st.spinner("Running Genetic Algorithm..."):
-        main(st.session_state.pop_size, st.session_state.mut_rate, st.session_state.target_fitness)
+        main(pop_size, mut_rate, target_fitness)
