@@ -1,6 +1,14 @@
 import streamlit as st
 import random
 
+# Initialize session state for inputs
+if "target_fitness" not in st.session_state:
+    st.session_state.target_fitness = 0.958
+if "pop_size" not in st.session_state:
+    st.session_state.pop_size = 100
+if "mut_rate" not in st.session_state:
+    st.session_state.mut_rate = 0.2
+
 # Genetic Algorithm Functions
 def initialize_pop(pop_size):
     predefined_learning_rates = [0.001, 0.005, 0.01]
@@ -76,11 +84,31 @@ def main(pop_size, mut_rate, target_fitness):
 # Streamlit UI
 st.title("Genetic Algorithm for Hyperparameter Optimization")
 
-# User inputs
-target_fitness = st.number_input("Target Fitness", min_value=0.90, max_value=1.0, value=0.958, step=0.001)
-pop_size = st.number_input("Population Size", min_value=10, max_value=200, value=100, step=10)
-mut_rate = st.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
+# User inputs with session state
+st.session_state.target_fitness = st.number_input(
+    "Target Fitness",
+    min_value=0.90,
+    max_value=1.0,
+    value=st.session_state.target_fitness,
+    step=0.001,
+)
+
+st.session_state.pop_size = st.number_input(
+    "Population Size",
+    min_value=10,
+    max_value=200,
+    value=st.session_state.pop_size,
+    step=10,
+)
+
+st.session_state.mut_rate = st.slider(
+    "Mutation Rate",
+    min_value=0.0,
+    max_value=1.0,
+    value=st.session_state.mut_rate,
+    step=0.01,
+)
 
 if st.button("Run Genetic Algorithm"):
     with st.spinner("Running Genetic Algorithm..."):
-        main(pop_size, mut_rate, target_fitness)
+        main(st.session_state.pop_size, st.session_state.mut_rate, st.session_state.target_fitness)
