@@ -1,8 +1,5 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import random
-import time
 
 # Genetic Algorithm Functions
 def initialize_pop(pop_size):
@@ -52,7 +49,6 @@ def mutate(individual, mut_rate):
 def main(pop_size, mut_rate, target_fitness):
     population = initialize_pop(pop_size)
     generation = 1
-    history = []
 
     while True:
         selected = selection(population)
@@ -68,15 +64,14 @@ def main(pop_size, mut_rate, target_fitness):
         best_individual = max(population, key=lambda ind: fitness_cal(ind))
         best_fitness = fitness_cal(best_individual)
 
-        # Log generation details
-        history.append({"Generation": generation, "Best Fitness": best_fitness, "Best Individual": best_individual})
+        # Streamlit live output
+        st.write(f"Generation {generation}, Best Fitness: {best_fitness:.6f}, Best Individual: {best_individual}")
 
         if best_fitness >= target_fitness:
+            st.success(f"Optimal Solution Found! Best Fitness: {best_fitness:.6f}, Best Individual: {best_individual}")
             break
 
         generation += 1
-
-    return history
 
 # Streamlit UI
 st.title("Genetic Algorithm for Hyperparameter Optimization")
@@ -88,14 +83,4 @@ mut_rate = st.slider("Mutation Rate", min_value=0.0, max_value=1.0, value=0.2, s
 
 if st.button("Run Genetic Algorithm"):
     with st.spinner("Running Genetic Algorithm..."):
-        history = main(pop_size, mut_rate, target_fitness)
-        st.success("Optimization Complete!")
-    
-    # Display results
-    st.subheader("All Generations")
-    history_df = pd.DataFrame(history)
-    st.dataframe(history_df)
-
-    st.subheader("Best Individual")
-    best_individual = history[-1]["Best Individual"]
-    st.write(best_individual)
+        main(pop_size, mut_rate, target_fitness)
